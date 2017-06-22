@@ -15,6 +15,8 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 	}
+	defer ln.Close()
+
 	fmt.Println("server started")
 
 	for {
