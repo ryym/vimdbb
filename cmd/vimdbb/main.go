@@ -19,25 +19,79 @@ func main() {
 
 	fmt.Println("server started")
 
+	sysChan := make(chan string)
+	userChan := make(chan net.Conn)
+
+	sysConn, err := ln.Accept()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("sys connection start")
+	go listenSysCommands(sysChan, sysConn)
+	go listenUserConns(userChan, ln)
+	serve(sysChan, userChan)
+
+	fmt.Println("server stopped")
+}
+
+func serve(sysChan chan string, userChan chan net.Conn) {
+	conns := make([]net.Conn, 0)
+	for {
+		select {
+		case command := <-sysChan:
+			keep := handleSysCommand(command, conns)
+			if !keep {
+				return
+			}
+
+		case conn := <-userChan:
+			defer conn.Close()
+			conns = append(conns, conn)
+			go handleUserConn(conn)
+
+		default:
+		}
+	}
+}
+
+func listenSysCommands(ch chan string, conn net.Conn) {
+	sc := bufio.NewScanner(conn)
+	for sc.Scan() {
+		message := sc.Text()
+		_, command, _ := vimch.DecodeMessage(message)
+		fmt.Println(message, command)
+		ch <- command
+	}
+}
+
+func listenUserConns(ch chan net.Conn, ln net.Listener) {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
+		} else {
+			ch <- conn
 		}
-		defer conn.Close()
-
-		fmt.Println("accepted")
-		go handle(conn)
 	}
 }
 
-func handle(conn net.Conn) {
+func handleSysCommand(command string, conns []net.Conn) bool {
+	switch command {
+	case "KILL":
+		for _, conn := range conns {
+			conn.Close()
+		}
+		return false
+	}
+	return true
+}
+
+func handleUserConn(conn net.Conn) {
 	sc := bufio.NewScanner(conn)
 
 	for sc.Scan() {
-		fmt.Println("scanned")
 		message := sc.Text()
-
 		fmt.Println(message)
 
 		result, err := handleMessage(message)
@@ -47,7 +101,7 @@ func handle(conn net.Conn) {
 		conn.Write(result)
 	}
 
-	fmt.Println("END!")
+	fmt.Println("disconnected")
 }
 
 func handleMessage(message string) ([]byte, error) {
