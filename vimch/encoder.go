@@ -2,7 +2,6 @@ package vimch
 
 import (
 	"encoding/json"
-	"github.com/ryym/vimdbb"
 	"strconv"
 	"strings"
 )
@@ -14,14 +13,20 @@ func EncodeMessage(id float64, payload interface{}) ([]byte, error) {
 	return json.Marshal(message)
 }
 
-// m: [ID, Payload] (e.g. [1, { "Query": "select 1" }])
-func DecodeMessage(m string) vimdbb.Action {
+// m: [ID, Action, Payload] (e.g. [1, "Query", { "Query": "select 1" }])
+func DecodeMessage(m string) (float64, string, string) {
 	ret := strings.SplitN(m, ",", 2)
 	id, _ := strconv.Atoi(ret[0][1:])
 
-	payloadStr := ret[1][:len(ret[1])-1]
-	payload := vimdbb.Payload{}
-	json.Unmarshal([]byte(payloadStr), &payload)
+	ret = strings.SplitN(ret[1], ",", 2)
+	var action string
+	json.Unmarshal([]byte(ret[0][1:]), &action)
 
-	return vimdbb.Action{Id: float64(id), Payload: payload}
+	payloadStr := ret[1][:len(ret[1])-2]
+
+	return float64(id), action, payloadStr
+}
+
+func DecodePayload(payload string, v interface{}) error {
+	return json.Unmarshal([]byte(payload), v)
 }

@@ -1,12 +1,12 @@
 package vimdbb
 
-type Payload struct {
+type QueryPayload struct {
 	Query string
 }
 
 type Action struct {
-	Id      float64
-	Payload Payload
+	Id   float64
+	Type string
 }
 type Result struct {
 	Rows string

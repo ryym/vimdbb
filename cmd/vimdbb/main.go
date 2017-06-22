@@ -29,7 +29,6 @@ func main() {
 		fmt.Println("accepted")
 		go handle(conn)
 	}
-
 }
 
 func handle(conn net.Conn) {
@@ -41,20 +40,32 @@ func handle(conn net.Conn) {
 
 		fmt.Println(message)
 
-		action := vimch.DecodeMessage(message)
-
-		result := run(action.Payload.Query)
-		resJson, err := vimch.EncodeMessage(action.Id, vimdbb.Result{
-			Rows: result,
-		})
-
+		result, err := handleMessage(message)
 		if err != nil {
 			panic(err.Error())
 		}
-		conn.Write(resJson)
+		conn.Write(result)
 	}
 
 	fmt.Println("END!")
+}
+
+func handleMessage(message string) ([]byte, error) {
+	id, action, payload := vimch.DecodeMessage(message)
+	switch action {
+	case "Query":
+		queryP := vimdbb.QueryPayload{}
+		vimch.DecodePayload(payload, &queryP)
+		return handleQuery(id, queryP)
+	}
+	panic("Unknown action " + action)
+}
+
+func handleQuery(id float64, p vimdbb.QueryPayload) ([]byte, error) {
+	result := run(p.Query)
+	return vimch.EncodeMessage(id, vimdbb.Result{
+		Rows: result,
+	})
 }
 
 func run(queryStr string) string {
