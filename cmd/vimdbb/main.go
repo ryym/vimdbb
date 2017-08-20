@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/ryym/vimdbb"
+	"github.com/ryym/vimdbb/formatter"
 	"github.com/ryym/vimdbb/mysql"
 	"github.com/ryym/vimdbb/vimch"
 	"net"
@@ -134,5 +135,5 @@ func run(queryStr string) string {
 		panic(err.Error())
 	}
 
-	return mysql.ResultToString(result)
+	return formatter.ResultToString(result)
 }

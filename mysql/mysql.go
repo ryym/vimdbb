@@ -6,8 +6,8 @@ import (
 )
 
 type Result struct {
-	columns []string
-	rows    [][]string
+	Columns []string
+	Rows    [][]string
 }
 
 type DB interface {
@@ -79,28 +79,5 @@ func fetchRows(db *sql.DB, query string) (*Result, error) {
 		return nil, err
 	}
 
-	return &Result{columns: columns, rows: rows}, nil
-}
-
-func ResultToString(ret *Result) string {
-	result := ""
-	for i, col := range ret.columns {
-		if i != 0 {
-			result += " | "
-		}
-		result += col
-	}
-	result += "\n---------------\n"
-
-	for _, row := range ret.rows {
-		for i, val := range row {
-			if i != 0 {
-				result += " | "
-			}
-			result += val
-		}
-		result += "\n"
-	}
-
-	return result
+	return &Result{Columns: columns, Rows: rows}, nil
 }
