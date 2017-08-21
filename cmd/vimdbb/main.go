@@ -59,10 +59,10 @@ func serve(sysChan chan string, userChan chan net.Conn) {
 func listenSysCommands(ch chan string, conn net.Conn) {
 	sc := bufio.NewScanner(conn)
 	for sc.Scan() {
-		message := sc.Text()
-		_, command, _ := vimch.DecodeMessage(message)
-		fmt.Println(message, command)
-		ch <- command
+		rawMessage := sc.Text()
+		m := vimch.DecodeMessage(rawMessage)
+		fmt.Println(rawMessage)
+		ch <- m.Command
 	}
 }
 
@@ -105,15 +105,15 @@ func handleUserConn(conn net.Conn) {
 	fmt.Println("disconnected")
 }
 
-func handleMessage(message string) ([]byte, error) {
-	id, action, payload := vimch.DecodeMessage(message)
-	switch action {
+func handleMessage(rawMessage string) ([]byte, error) {
+	m := vimch.DecodeMessage(rawMessage)
+	switch m.Command {
 	case "Query":
 		queryP := vimdbb.QueryPayload{}
-		vimch.DecodePayload(payload, &queryP)
-		return handleQuery(id, queryP)
+		vimch.DecodePayload(m.Payload, &queryP)
+		return handleQuery(m.Id, queryP)
 	}
-	panic("Unknown action " + action)
+	panic("Unknown command " + m.Command)
 }
 
 func handleQuery(id float64, p vimdbb.QueryPayload) ([]byte, error) {
