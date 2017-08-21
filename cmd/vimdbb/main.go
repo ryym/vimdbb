@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/ryym/vimdbb"
 	"github.com/ryym/vimdbb/formatter"
@@ -96,11 +97,12 @@ func handleUserConn(conn net.Conn) {
 		fmt.Println(message)
 
 		result, err := handleUserMessage(message)
-
 		if err != nil {
-			panic(err.Error())
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
-		conn.Write(result)
+		if result != nil {
+			conn.Write(result)
+		}
 	}
 
 	fmt.Println("disconnected")
@@ -111,9 +113,24 @@ func handleUserMessage(rawMessage string) ([]byte, error) {
 	result, err := handleUserCommand(m)
 
 	if err != nil {
-		return nil, err
+		res := make(map[string]interface{})
+		res["Command"] = "ERR"
+		res["Result"] = err.Error()
+		encm, encErr := vimch.EncodeMessage(m.Id, res)
+		if encErr != nil {
+			return nil, encErr
+		}
+		return encm, err
 	}
-	return vimch.EncodeMessage(m.Id, result)
+
+	if result != nil {
+		res := make(map[string]interface{})
+		res["Command"] = m.Command
+		res["Result"] = result
+		return vimch.EncodeMessage(m.Id, res)
+	}
+
+	return nil, nil
 }
 
 func handleUserCommand(m *vimdbb.Message) (interface{}, error) {
@@ -124,21 +141,21 @@ func handleUserCommand(m *vimdbb.Message) (interface{}, error) {
 		return handleQuery(queryP)
 	}
 
-	panic("Unknown command " + m.Command)
+	return nil, errors.New("Unknown command " + m.Command)
 }
 
-func handleQuery(p vimdbb.QueryPayload) (vimdbb.Result, error) {
+func handleQuery(p vimdbb.QueryPayload) (*vimdbb.Result, error) {
 	db, err := mysql.Open("root:root@/sample")
 	if err != nil {
-		panic(err.Error())
+		return nil ,err
 	}
 	defer db.Close()
 
 	result, err := db.Query(p.Query)
 	if err != nil {
-		panic(err.Error())
+		return nil ,err
 	}
 
 	rows := formatter.ResultToString(result)
-	return vimdbb.Result{ Rows: rows }, nil
+	return &vimdbb.Result{ Rows: rows }, nil
 }
