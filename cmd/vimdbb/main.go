@@ -95,7 +95,8 @@ func handleUserConn(conn net.Conn) {
 		message := sc.Text()
 		fmt.Println(message)
 
-		result, err := handleMessage(message)
+		result, err := handleUserMessage(message)
+
 		if err != nil {
 			panic(err.Error())
 		}
@@ -105,35 +106,39 @@ func handleUserConn(conn net.Conn) {
 	fmt.Println("disconnected")
 }
 
-func handleMessage(rawMessage string) ([]byte, error) {
+func handleUserMessage(rawMessage string) ([]byte, error) {
 	m := vimch.DecodeMessage(rawMessage)
+	result, err := handleUserCommand(m)
+
+	if err != nil {
+		return nil, err
+	}
+	return vimch.EncodeMessage(m.Id, result)
+}
+
+func handleUserCommand(m *vimdbb.Message) (interface{}, error) {
 	switch m.Command {
 	case "Query":
 		queryP := vimdbb.QueryPayload{}
 		vimch.DecodePayload(m.Payload, &queryP)
-		return handleQuery(m.Id, queryP)
+		return handleQuery(queryP)
 	}
+
 	panic("Unknown command " + m.Command)
 }
 
-func handleQuery(id float64, p vimdbb.QueryPayload) ([]byte, error) {
-	result := run(p.Query)
-	return vimch.EncodeMessage(id, vimdbb.Result{
-		Rows: result,
-	})
-}
-
-func run(queryStr string) string {
+func handleQuery(p vimdbb.QueryPayload) (vimdbb.Result, error) {
 	db, err := mysql.Open("root:root@/sample")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
 
-	result, err := db.Query(queryStr)
+	result, err := db.Query(p.Query)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	return formatter.ResultToString(result)
+	rows := formatter.ResultToString(result)
+	return vimdbb.Result{ Rows: rows }, nil
 }
