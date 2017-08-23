@@ -1,14 +1,16 @@
 package vimdbb
 
 type QueryPayload struct {
-	Query string
+	QueryID string
+	Query   string
 }
 
 type Message struct {
-	Id      float64
+	ID      float64
 	Command string
 	Payload string
 }
 type Result struct {
-	Rows string
+	QueryID string
+	Rows    string
 }

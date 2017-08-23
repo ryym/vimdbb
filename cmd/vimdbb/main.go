@@ -116,7 +116,7 @@ func handleUserMessage(rawMessage string) ([]byte, error) {
 		res := make(map[string]interface{})
 		res["Command"] = "ERR"
 		res["Result"] = err.Error()
-		encm, encErr := vimch.EncodeMessage(m.Id, res)
+		encm, encErr := vimch.EncodeMessage(m.ID, res)
 		if encErr != nil {
 			return nil, encErr
 		}
@@ -127,7 +127,7 @@ func handleUserMessage(rawMessage string) ([]byte, error) {
 		res := make(map[string]interface{})
 		res["Command"] = m.Command
 		res["Result"] = result
-		return vimch.EncodeMessage(m.Id, res)
+		return vimch.EncodeMessage(m.ID, res)
 	}
 
 	return nil, nil
@@ -147,15 +147,16 @@ func handleUserCommand(m *vimdbb.Message) (interface{}, error) {
 func handleQuery(p vimdbb.QueryPayload) (*vimdbb.Result, error) {
 	db, err := mysql.Open("root:root@/sample")
 	if err != nil {
-		return nil ,err
+		return nil, err
 	}
 	defer db.Close()
 
-	result, err := db.Query(p.Query)
+	queryResult, err := db.Query(p.Query)
 	if err != nil {
-		return nil ,err
+		return nil, err
 	}
 
-	rows := formatter.ResultToString(result)
-	return &vimdbb.Result{ Rows: rows }, nil
+	rows := formatter.ResultToString(queryResult)
+	result := vimdbb.Result{QueryID: p.QueryID, Rows: rows}
+	return &result, nil
 }

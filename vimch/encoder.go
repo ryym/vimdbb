@@ -26,7 +26,7 @@ func DecodeMessage(m string) *vimdbb.Message {
 	payloadStr := ret[1][:len(ret[1])-2]
 
 	return &vimdbb.Message{
-		Id:      float64(id),
+		ID:      float64(id),
 		Command: command,
 		Payload: payloadStr,
 	}
