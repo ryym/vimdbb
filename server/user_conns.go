@@ -45,7 +45,7 @@ func handleUserCommand(m *vimdbb.Message) (interface{}, error) {
 }
 
 func handleQuery(p vimdbb.QueryPayload) (*vimdbb.Result, error) {
-	db, err := mysql.Open("root:root@/sample")
+	db, err := mysql.Open(p.ConnectionURL)
 	if err != nil {
 		return nil, err
 	}
