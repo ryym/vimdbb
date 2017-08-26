@@ -13,10 +13,7 @@ func handleUserMessage(mes string) ([]byte, error) {
 	result, err := handleUserCommand(m)
 
 	if err != nil {
-		res := make(map[string]interface{})
-		res["Command"] = "ERR"
-		res["Result"] = err.Error()
-		encm, encErr := vimch.EncodeMessage(m.ID, res)
+		encm, encErr := encodeResp(m.ID, "ERR", err.Error())
 		if encErr != nil {
 			return nil, encErr
 		}
@@ -24,13 +21,17 @@ func handleUserMessage(mes string) ([]byte, error) {
 	}
 
 	if result != nil {
-		res := make(map[string]interface{})
-		res["Command"] = m.Command
-		res["Result"] = result
-		return vimch.EncodeMessage(m.ID, res)
+		return encodeResp(m.ID, m.Command, result)
 	}
 
 	return nil, nil
+}
+
+func encodeResp(id float64, command string, result interface{}) ([]byte, error) {
+	res := make(map[string]interface{})
+	res["Command"] = command
+	res["Result"] = result
+	return vimch.EncodeMessage(id, res)
 }
 
 func handleUserCommand(m *vimdbb.Message) (interface{}, error) {
