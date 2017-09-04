@@ -35,13 +35,12 @@ func formatRow(lens []int, values []string) string {
 
 func getMaxLengths(ret *mysql.Result) []int {
 	lens := make([]int, len(ret.Columns))
+	for i, col := range ret.Columns {
+		lens[i] = len(col)
+	}
 
 	for _, row := range ret.Rows {
 		for i, v := range row {
-			col := ret.Columns[i]
-			if lens[i] < len(col) {
-				lens[i] = len(col)
-			}
 			if lens[i] < len(v) {
 				lens[i] = len(v)
 			}
