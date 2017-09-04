@@ -44,31 +44,17 @@ func listenUserConns(ch chan net.Conn, ln net.Listener) {
 }
 
 func serve(sysChan chan string, connChan chan net.Conn) {
-	conns := make([]net.Conn, 0)
 	for {
 		select {
 		case command := <-sysChan:
-			keep := handleSysMessage(command, conns)
-			if !keep {
+			if command == "KILL" {
 				return
 			}
 		case conn := <-connChan:
 			defer conn.Close()
-			conns = append(conns, conn)
 			go handleUserConn(conn)
 		}
 	}
-}
-
-func handleSysMessage(command string, conns []net.Conn) bool {
-	switch command {
-	case "KILL":
-		for _, conn := range conns {
-			conn.Close()
-		}
-		return false
-	}
-	return true
 }
 
 func handleUserConn(conn net.Conn) {
